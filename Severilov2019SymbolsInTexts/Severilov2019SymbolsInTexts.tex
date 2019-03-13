@@ -90,6 +90,9 @@ $$\mathbb{P}(y_t = k| d_t) = \cfrac{e^{W_kd_\text{t}}}{\sum_{\tilde{k}\in K}e^{W
 Для оптимизации модели используется минимизация отрицательного логарифма вероятности верной метки: 
 $$\mathcal{L} = -\sum_{t=1}^{T}\log(\mathbb{P}(y_t|d_t))$$
 
+Т.е. решается данная задача: 
+$$\textbf{W}^* = \underset{W}{\text{argmin}}(\mathcal{L}(\textbf{W}))$$
+
 
 \paragraph{Усовершенствования базового алгоритма} 
 
