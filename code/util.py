@@ -7,6 +7,7 @@ import csv
 from torch.utils.data import Dataset
 import torch.nn as nn
 from torch.autograd import Variable
+import re
 
 
 # Misc helper functions
@@ -61,12 +62,14 @@ def get_embedding_matrix(word2idx, idx2word, normalization=False):
     """
     # Load the GloVe vectors into a dictionary, keeping only words in vocab
     embedding_dim = 300
-    glove_path = '/Users/Pablo/Documents/база/metaphor-in-context-master/glove/glove840B300d.txt'#"../glove/glove840B300d.txt"
+    #glove_path = '/Users/Pablo/Documents/база/metaphor-in-context-master/glove/glove840B300d.txt'#"../glove/glove840B300d.txt"
+    glove_path = '/Users/Pablo/Documents/база/metaphor-in-context-master/180/model.txt'
     glove_vectors = {}
     with open(glove_path) as glove_file:
         for line in tqdm(glove_file, total=get_num_lines(glove_path)):
             split_line = line.rstrip().split()
-            word = split_line[0]
+            #word = split_line[0]
+            word = re.split(r"_", split_line[0])[0]
             if len(split_line) != (embedding_dim + 1) or word not in word2idx:
                 continue
             assert (len(split_line) == embedding_dim + 1)
