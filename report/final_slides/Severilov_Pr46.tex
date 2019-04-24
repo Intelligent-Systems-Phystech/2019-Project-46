@@ -1,0 +1,179 @@
+\documentclass{beamer}
+\usepackage[cp1251]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,mathrsfs,mathtext}
+\usepackage{graphicx, epsfig}
+\usetheme{Warsaw}%{Singapore}%{Warsaw}%{Warsaw}%{Darmstadt}
+\usecolortheme{sidebartab}
+\definecolor{beamer@blendedblue}{RGB}{15,120,80}
+
+\bibliographystyle{unsrt}
+\bibliography{jmlda-bib}
+	
+%----------------------------------------------------------------------------------------------------------
+\title[\hbox to 56mm{Поиск символов в текстах  \hfill\insertframenumber\,/\,\inserttotalframenumber}]
+{Задача поиска символов в текстах}
+\author[П.\,А. Северилов]{\large \\Северилов Павел Андреевич}
+\institute{\large
+Московский физико-технический институт\par}
+
+\date{\footnotesize{\emph{Курс:} Численные методы обучения по прецедентам\par (практика, В.\,В. Стрижов)/Группа 674, весна 2019}}
+%----------------------------------------------------------------------------------------------------------
+\begin{document}
+%----------------------------------------------------------------------------------------------------------
+%------------------------------------------------
+
+\begin{frame}
+	\titlepage
+\end{frame}
+
+%-----------------------------------------------------------------------------------------------------
+\begin{frame}{Цель исследования}
+	\begin{block}{Проблема}
+		Современные модели для обработки текстов воспринимают высказывания буквально, и различные средства художественной выразительности, в частности, символы, метафоры, аллегории и др. не интерпретируются ими верным образом.
+	\end{block}
+	
+	\begin{block}{Цель работы}
+		Получить оптимальную модель для определения неоднозначности в высказываниях.
+	\end{block}
+	
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+	\begin{frame}{Пример}
+		\begin{block}{Золотые руки}
+			\begin{itemize}
+				\item "Мастер с золотыми руками" — умение хорошо что-либо делать
+				\item "У статуи золотые руки" — материал, из которого сделана статуя
+			\end{itemize}
+		\end{block}
+	\end{frame}
+%----------------------------------------------------------------------------------------------------------
+	\begin{frame}{Литература}
+		\begin{thebibliography}{1}
+			
+			\bibitem{author09anyscience}
+			\BibAuthor{Marek Rei, Gamal K.O. Crichton,  Sampo Pyysalo \;N.}
+			\BibTitle{Attending to Characters in Neural Sequence Labeling Models}~//
+			\BibJournal{Proceedings of COLING 2016, the 26th International Conference on Computational Linguistics: Technical Papers }, 2016, C16-1030, Pp.\,309--318.
+			
+			\bibitem{author09anyscience}
+			\BibAuthor{Adnan Akhundov, Dietrich Trautmann, Georg Groh \;N.}
+			\BibTitle{Sequence Labeling: A Practical Approach}~//
+			\BibJournal{CoRR }, vol. abs/1808.03926, 2018.
+			
+			\bibitem{author09anyscience}
+			\BibAuthor{Gao, Ge  and Choi, Eunsol  and Choi, Yejin  and Zettlemoyer, Luke \;N.}
+			\BibTitle{Neural Metaphor Detection in Context}~//
+			\BibJournal{Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing}, 2018, Pp.\, 607--613.
+			
+		\end{thebibliography}
+		
+	\end{frame}
+	%----------------------------------------------------------------------------------------------------------
+	\begin{frame}{Постановка задачи}
+		\begin{block}{Sequence labeling} Дано предложение \textbf{X}, разделенное на слова: $\{x_1, x_2, \cdots, x_n\}$. Требуется построить последовательность двоичных меток (labels) $\{l_1, l_2, \cdots, l_n\}$, которые идентифицируют наличие неоднозначности/символа в каждом слове  $x_i$
+		\end{block}
+		
+		\begin{block}{Классификация} Требуется для целевой переменной $i$ предсказать отношение $x_i$ к классу символ или не символ, соответственно 1 и 0. 
+		\end{block}
+	\end{frame}
+%----------------------------------------------------------------------------------------------------------
+	\begin{frame}{Базовый алгоритм}
+		\begin{figure}[H]
+			\centering
+			\includegraphics[width=0.60\textwidth]{./pics/BiLSTM}
+			\caption{Схема базовой модели BiLSTM}
+		\end{figure}
+		\begin{block}{ Представления в LSTM-сети} 
+			$$\overrightarrow{h_t} = \text{LSTM}(x_\text{t}, \overrightarrow{h_{t-1}})~~~~~
+			\overleftarrow{h_t} = \text{LSTM}(x_\text{t}, \overleftarrow{h_{t+1}})~~~~
+			h_\text{t} = [\overrightarrow{h_\text{t}};\overleftarrow{h_\text{t}}]$$
+			Скрытый слой нелинейности:
+			$d_\text{t} = tanh(W_\text{d}h_\text{t}),$
+			где $\textbf{W}_\text{d}$ -- весовая матрица между слоями.
+		\end{block}
+	\end{frame}
+%----------------------------------------------------------------------------------------------------------
+		
+		\begin{frame}{ Итоговая задача оптимизации}
+			Нормированное распределение вероятностей по всем возможным меткам для каждого слова (softmax):
+			
+			$$\mathbb{P}(y_t = k| d_t) = \cfrac{e^{W_kd_\text{t}}}{\sum_{\tilde{k}\in K}e^{W_\tilde{k}d_\text{t}}},$$
+			где $\mathbb{P}(y_t = k| d_t)$ -- вероятность того, что метка t-ого слова $y_t$ будет k ($K$ -- множество всевозможных меток), $\textbf{W}_k$ -- k-ая строка весовой матрицы $\textbf{W}$. 
+			
+			Для оптимизации модели используется минимизация функции
+			$$\mathcal{L} = -\sum_{t=1}^{T}\log(\mathbb{P}(y_t|d_t))$$
+			
+			Т.е. решается данная задача: 
+			$$\boxed{\textbf{W}^* = \underset{W}{\text{argmin}}(\mathcal{L}(\textbf{W}))}$$
+		\end{frame}
+	%----------------------------------------------------------------------------------------------------------
+	\begin{frame}{Вычислительный эксперимент}
+		\begin{block}{Тестируемая модель}
+			BiLSTM нейронная сеть с softmax
+			Возможные улучшения:
+			\begin{enumerate}
+				\item BiLSTM нейронная сеть с CRF (Conditional random field)
+				\item BiLSTM нейронная сеть с Attention
+			\end{enumerate}
+		\end{block}
+		
+		\begin{block}{Данные}
+			\begin{enumerate}
+				\item MOH датасет с метафорами (eng)
+				\item VU Amsterdam Metaphor Corpus (eng)
+				\item Разметка для текста "Мастер и Маргарита"
+				\item Размеченные данные из института русского языка
+			\end{enumerate}
+		\end{block}
+		
+	\end{frame}
+	
+	%----------------------------------------------------------------------------------------------------------
+	\begin{frame}{Результаты эксперимента: F1 мера для MOH датасета}
+		\begin{figure}[H]
+			\centering
+			\includegraphics[width=1.0\textwidth]{./pics/MOH_F1}
+		\end{figure}
+	\end{frame}
+	
+	%----------------------------------------------------------------------------------------------------------
+	\begin{frame}{Результаты эксперимента: Качество алгоритма}
+
+			\textbf{После 10 эпох обучения на MOH датасете:}
+			\begin{itemize}
+				\item Precision  =  \textbf{64}.14
+				\item Recall  =  \textbf{67}.86
+				\item F1  =  \textbf{65}.89
+				\item Accuracy  =  \textbf{69}.27
+			\end{itemize}
+
+
+				\textbf{После 10 эпох обучения на датасете "Мастер и Маргарита":}
+				\begin{itemize}
+					\item Precision  =  \textbf{86}.96
+					\item Recall  =  \textbf{93}.02
+					\item F1  =  \textbf{89}.89
+					\item Accuracy  =  \textbf{88}.61
+				\end{itemize}
+
+	\end{frame}
+	%----------------------------------------------------------------------------------------------------------
+	\begin{frame}{Результаты эксперимента: F1 для VUA датасета:}
+			\begin{figure}[H]
+				\centering
+				\includegraphics[width=1.0\textwidth]{./pics/VUA_F1}
+			\end{figure}
+		\end{frame}
+		%----------------------------------------------------------------------------------------------------------
+		\begin{frame}{Заключение}
+			\begin{itemize}
+				\item Алгоритм sequence labeling хорошо подходит для поиска символов в тексте
+				\item Качество заметно улучшится при увеличении выборки
+				\item Предложенные модели могут быть применены для определения не только каких-то конкретных неоднозначностей в тексте, а в целом для всех видов символов
+				\item Для русскоязычных текстов данная задача никак до этого не решалась
+			\end{itemize}
+		\end{frame}
+		%----------------------------------------------------------------------------------------------------------
+
+\end{document} 
